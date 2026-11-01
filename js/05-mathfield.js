@@ -47,6 +47,14 @@ const MF = (()=>{
     normCache.set(feed, v);
     return v;
   }
+  /* macro personali: valgono per la formula e per il campo di verifica; expand:false le tiene come sono scritte
+     anche nella serializzazione con le caselle, così \R resta \R nel sorgente */
+  const baseMacros = {...mf.macros};
+  function setMacros(list){
+    const all = {...baseMacros};
+    for (const m of list) if (m.opt===null) all[m.name] = {def:m.def, args:m.args, expand:false};
+    mf.macros = all; nf.macros = all; normCache.clear();
+  }
   function analyze(feed){ nf.setValue(slotsToMF(feed), {silenceNotifications:true, mode:'math'}); return {value: valueOf(nf), errors: [...(nf.errors||[])]}; }
 
   function fromSource(){
@@ -102,6 +110,12 @@ const MF = (()=>{
   }
   mf.addEventListener('input', onInput);
   mf.addEventListener('focusin', ()=>{ St.lastPane='mf'; });
+  /* MathLive dà il focus alla formula con un setTimeout dopo il clic: i tasti premuti nel frattempo andrebbero
+     al pannello attivo prima (il codice) o persi. Il ricevitore dei tasti di MathLive prende il focus subito */
+  mf.addEventListener('pointerdown', ()=>{
+    if (mf.hasFocus()) return;
+    try { mf.shadowRoot.querySelector('.ML__keyboard-sink').focus({preventScroll:true}); } catch(e){}
+  }, true);
   mf.addEventListener('selection-change', ()=>{
     try {
       const s = mf.selection, r = s.ranges[0];
@@ -149,5 +163,5 @@ const MF = (()=>{
   function zoom(v){ z = clamp(Math.round(v), 16, 80); document.documentElement.style.setProperty('--mfz', z+'px'); $('zlab').textContent=Math.round(z/30*100)+'%'; store.set('tl-zoom', z); }
   zoom(z);
   $('b-zin').onclick=()=>zoom(z*1.15); $('b-zout').onclick=()=>zoom(z/1.15); $('b-zfit').onclick=()=>zoom(30);
-  return {el:mf, FMT, fromSource, onInput, normalize, analyze, insert, applyFont, focus, getSelection, setSelection, setDisplay, value:()=>valueOf(mf)};
+  return {el:mf, FMT, fromSource, onInput, normalize, analyze, setMacros, insert, applyFont, focus, getSelection, setSelection, setDisplay, value:()=>valueOf(mf)};
 })();

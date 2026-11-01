@@ -19,13 +19,14 @@ function packagesFor(t){
 function texDocument(){
   const d=parseDoc(St.src);
   const math = d.env && d.env!=='$' && d.env!=='\\(' ? St.src.slice(d.os, d.ce) : `\\[\n${wrapAs('')}\n\\]`;
-  return `\\documentclass{article}\n\\usepackage{${packagesFor(St.src).join(',')}}\n\\pagestyle{empty}\n\\begin{document}\n${math.trim()}\n\\end{document}\n`;
+  const mac = Macros.text() ? Macros.text()+'\n' : '';
+  return `\\documentclass{article}\n\\usepackage{${packagesFor(St.src+mac).join(',')}}\n${mac}\\pagestyle{empty}\n\\begin{document}\n${math.trim()}\n\\end{document}\n`;
 }
 async function mjNode(){
   await MJ.whenReady();
   const d=parseDoc(St.src);
   const tex = d.inner ? St.src.slice(d.os, d.ce) : (body()||'\\phantom{x}');
-  return MathJax.tex2svgPromise(tex, {display:true});
+  return MathJax.tex2svgPromise(Macros.mj(tex), {display:true});
 }
 async function svgString(){
   const node=await mjNode(); const s=node.querySelector('svg').cloneNode(true);
@@ -65,12 +66,14 @@ async function openExport(){
       <button class="btn" id="ex-svg">Immagine SVG</button>
       <button class="btn" id="ex-png">Immagine PNG</button>
       <button class="btn" id="ex-mml">Copia MathML</button>
+      ${Formulas.active() ? `<button class="btn" id="ex-doc">Documento completo (${esc(Formulas.name())})</button>` : ''}
     </div>`);
+  if ($('ex-doc')) $('ex-doc').onclick=Formulas.save;
   $('m-b').querySelectorAll('[data-cp]').forEach(x=>x.onclick=()=>copyText(x.dataset.cp==='src'?St.src:wrapAs(x.dataset.cp), 'LaTeX copiato'));
   $('ex-tex').onclick=()=>{ download('formula.tex', texDocument(), 'application/x-tex'); toast('Documento formula.tex scaricato'); };
   $('ex-svg').onclick=async()=>{ download('formula.svg', await svgString(), 'image/svg+xml'); toast('formula.svg scaricato'); };
   $('ex-png').onclick=async()=>{ try { download('formula.png', await pngBlob()); toast('formula.png scaricato'); } catch(e){ toast('PNG non disponibile in questo browser'); } };
-  $('ex-mml').onclick=async()=>{ await MJ.whenReady(); const d=parseDoc(St.src); copyText(MathJax.tex2mml(d.inner?St.src.slice(d.os,d.ce):b, {display:true}), 'MathML copiato'); };
+  $('ex-mml').onclick=async()=>{ await MJ.whenReady(); const d=parseDoc(St.src); copyText(MathJax.tex2mml(Macros.mj(d.inner?St.src.slice(d.os,d.ce):b), {display:true}), 'MathML copiato'); };
   try { const n=await mjNode(); const p=$('ex-prv'); if (p){ p.innerHTML=''; p.appendChild(n.querySelector('svg')); } } catch(e){}
 }
 function copyFormula(){ if (!body()){ toast('La formula è vuota'); return; } copyText(wrapAs(''), 'LaTeX copiato negli appunti'); }
@@ -112,21 +115,16 @@ $('b-ex').onclick=()=>{
   $('m-b').querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{ closeModal(); setSource(EXAMPLES[+b.dataset.ex][1]); MF.focus(); toast(EXAMPLES[+b.dataset.ex][0]); });
 };
 
-/* ---------- apertura di file .tex: si sceglie una delle formule del documento ---------- */
-function findFormulas(text){
-  const out=[]; const re=/\\\[[\s\S]*?\\\]|\$\$[\s\S]+?\$\$|\\begin\{(equation\*?|align\*?|gather\*?|multline\*?|displaymath)\}[\s\S]*?\\end\{\1\}/g; let m;
-  const clean = text.replace(/(^|[^\\])%[^\n]*/g, (x,a)=>a+' '.repeat(x.length-a.length)); /* i commenti non contano, le posizioni restano */
-  while ((m=re.exec(clean))) out.push(text.slice(m.index, m.index+m[0].length));
-  return out;
-}
+/* ---------- apertura di file .tex: le macro del preambolo e le formule del documento ---------- */
 function loadText(text, name){
-  const fs = /\\begin\{document\}|\\documentclass/.test(text) || text.length>4000 ? findFormulas(text) : [];
-  if (!fs.length){ setSource(text.replace(/\s+$/,'')); toast('Aperto '+name); return; }
-  if (fs.length===1){ setSource(fs[0]); toast('Aperto '+name); return; }
-  modal(`Formule in ${name}`, `<p>Il file contiene ${fs.length} formule in display: scegli quella da modificare.</p><div class="exgrid">`+
-    fs.map((s,k)=>{ const d=parseDoc(s); const tex=(d.inner?s.slice(d.os,d.ce):s.slice(d.bs,d.be)).replace(/%[^\n]*/g,''); return `<button class="exb" data-f="${k}"><span class="exv" data-tex="${esc(tex)}" data-disp="1">…</span><b>Formula ${k+1}</b></button>`; }).join('')+'</div>');
-  MJ.fill($('m-b'));
-  $('m-b').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ closeModal(); setSource(fs[+b.dataset.f]); toast(`Formula ${+b.dataset.f+1} di ${name}`); });
+  const full = /\\begin\{document\}|\\documentclass/.test(text);
+  const defs = parseMacros(text);
+  if (defs.length || full) Macros.set(defs.map(m=>m.text).join('\n'));
+  const mac = defs.length ? ` · ${defs.length} macro dal preambolo` : '';
+  const rs = full || text.length>4000 ? findFormulas(text) : [];
+  if (!rs.length){ Formulas.close(false); setSource(text.replace(/\s+$/,'')); toast('Aperto '+name+mac); return; }
+  Formulas.open(name, text, rs);
+  toast(`${name}: ${rs.length} ${rs.length===1?'formula':'formule'}${mac}`);
 }
 function loadFile(f){ const r=new FileReader(); r.onload=()=>loadText(String(r.result), f.name); r.readAsText(f); }
 $('b-open').onclick=()=>$('file').click();
@@ -144,7 +142,8 @@ function openHelp(){
   modal('Scorciatoie da tastiera', `<table class="keys">
     <tr><td>Ctrl+Z · Ctrl+Y</td><td>Annulla · Ripeti (una sola cronologia per codice e formula)</td></tr>
     <tr><td>Ctrl+Maiusc+C</td><td>Copia il codice LaTeX della formula</td></tr>
-    <tr><td>Ctrl+S</td><td>Scarica la formula come documento .tex</td></tr>
+    <tr><td>Ctrl+S</td><td>Scarica la formula come documento .tex (con un file aperto: il file intero, con le formule aggiornate)</td></tr>
+    <tr><td>Alt+PagSu · Alt+PagGiù</td><td>Formula precedente · successiva del file aperto</td></tr>
     <tr><td>Alt+T · Alt+G</td><td>Testo normale · Tutti i simboli</td></tr>
     ${st}
     <tr><td>Esc</td><td>Chiude la galleria aperta</td></tr>
@@ -166,7 +165,8 @@ document.addEventListener('keydown', e=>{
   if (e.key==='F1'){ e.preventDefault(); openHelp(); return; }
   if (e.key==='Escape' && Ribbon.isOpen()){ e.preventDefault(); Ribbon.close(); return; }
   if (ctrl && e.shiftKey && k==='c'){ e.preventDefault(); copyFormula(); return; }
-  if (ctrl && !e.shiftKey && k==='s'){ e.preventDefault(); download('formula.tex', texDocument(), 'application/x-tex'); toast('Documento formula.tex scaricato'); return; }
+  if (ctrl && !e.shiftKey && k==='s'){ e.preventDefault(); if (Formulas.active()) Formulas.save(); else { download('formula.tex', texDocument(), 'application/x-tex'); toast('Documento formula.tex scaricato'); } return; }
+  if (e.altKey && !ctrl && (e.key==='PageUp'||e.key==='PageDown') && Formulas.active()){ e.preventDefault(); e.stopPropagation(); Formulas.step(e.key==='PageUp'?-1:1); return; }
   if (ctrl && !e.altKey && (k==='z'||k==='y') && !e.target.closest('#ed,#mf,input,textarea')){ e.preventDefault(); (k==='y'||e.shiftKey)?redo():undo(); return; }
   if (e.altKey && !ctrl && /^Key[A-Z]$/.test(e.code)){
     const L=e.code.slice(3);
@@ -182,7 +182,7 @@ document.addEventListener('keydown', e=>{
   const DEF = EXAMPLES[0][1];
   const saved = store.get('tl-src');
   St.lastPane='mf';
-  setSource(saved!==null ? saved : DEF, {record:false});
+  if (!Formulas.restore()) setSource(saved!==null ? saved : DEF, {record:false});
   if ($('stylesel').value==='inline') MF.setDisplay(false);
   updateUndoBtns();
 })();

@@ -1,5 +1,6 @@
 # Tavolo MathTeX
 
+[![Demo](https://img.shields.io/badge/demo-online-blue)](https://giozoc.github.io/tavolo-mathtex/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-blue)](#stack-tecnologico)
 [![LaTeX](https://img.shields.io/badge/LaTeX-amsmath%20%7C%20amssymb-blue)](#funzionalità)
 [![Licenza](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](#licenza)
@@ -19,6 +20,7 @@ Tavolo MathTeX è un **editor visuale di equazioni matematiche in LaTeX** che fu
   * Sincronizzazione bidirezionale che **riscrive solo la parte cambiata** del sorgente
   * Barra multifunzione con strutture e simboli organizzati come nell'editor di equazioni di Word
   * Anteprima e verifica indipendente con MathJax
+  * Apertura di documenti `.tex` interi: lista delle formule, macro personali lette dal preambolo, salvataggio del file aggiornato
   * Esempi `.tex` compilabili con pdfLaTeX e test automatici nel browser
 
 ---
@@ -49,8 +51,19 @@ Scrivere una formula in LaTeX significa ricordare comandi, contare graffe e rico
 **Sorgente sempre disponibile**
 - copia del LaTeX con un pulsante (anche come `$…$`, `\[…\]` o `equation`) e con **Ctrl+Maiusc+C**
 - esportazione come documento `.tex` con i pacchetti necessari, **SVG**, **PNG** e **MathML**
-- apertura di un file `.tex`: se contiene più formule si sceglie quale modificare
 - annulla e ripeti con **una sola cronologia** per codice e formula; cancella e ripristina
+
+**Documenti interi**
+- aprendo un file `.tex` (pulsante *Apri* o trascinandolo sulla pagina) le sue formule in display (`\[…\]`, `$$…$$`, `equation`, `align`, `gather`, `multline`, `flalign`, `displaymath`, con o senza asterisco) compaiono in una **lista laterale** con l'anteprima; quelle commentate restano fuori
+- un clic su una formula la porta nell'editor; **Alt+PagSu** e **Alt+PagGiù** passano alla precedente e alla successiva
+- ogni modifica torna nel documento, nel punto da cui viene la formula, senza toccare il resto del file; le formule cambiate sono segnate nella lista
+- ogni formula ha la sua cronologia di annulla e ripeti
+- *Scarica* (o **Ctrl+S**) salva il file intero con le formule aggiornate; il documento aperto resta disponibile anche dopo aver ricaricato la pagina
+
+**Macro personali**
+- le definizioni del preambolo (`\newcommand`, `\renewcommand`, `\providecommand`, `\DeclareMathOperator`, `\def`) vengono lette all'apertura del file e passate a MathLive: `\R`, `\norm{v}`, `\sen x` si vedono disegnati nella formula e restano scritti così nel sorgente
+- la finestra *Macro* mostra le definizioni attive e permette di scriverle a mano, anche senza aprire un file
+- valgono anche per l'anteprima MathJax, per i suggerimenti del codice e per le esportazioni: il documento `.tex` esportato le riporta nel preambolo
 
 **Errori senza blocchi**
 - graffe non chiuse, `\begin`/`\end` e `\left`/`\right` spaiati, doppi esponenti: sottolineati nel codice, con la riga segnata
@@ -99,7 +112,7 @@ Le caselle vuote (`\placeholder{}` in MathLive) non finiscono mai nel sorgente (
 ## Struttura del Repository
 
 ```text
-tavolo-latex/
+tavolo-mathtex/
 ├── index.html              # pagina principale
 ├── css/
 │   └── style.css           # stile e temi, ripresi da Tavolo TikZ
@@ -112,7 +125,8 @@ tavolo-latex/
 │   ├── 06-catalog.js       # strutture e simboli della barra multifunzione
 │   ├── 07-ribbon.js        # barra multifunzione e gallerie
 │   ├── 08-preview.js       # verifica e anteprima MathJax, messaggi
-│   └── 09-panel.js         # esportazione, esempi, file, scorciatoie, avvio
+│   ├── 09-document.js      # macro personali, formule del file aperto
+│   └── 10-panel.js         # esportazione, esempi, apertura dei file, scorciatoie, avvio
 ├── esempi/
 │   └── formule.tex         # gli esempi dell'editor, compilabili con pdfLaTeX
 ├── tests/                  # prove automatiche nel browser (Playwright)
@@ -153,12 +167,12 @@ Le prove usano Playwright con Chromium (`pip install playwright && playwright in
 
 | Prova | Cosa controlla |
 |---|---|
-| `test_ui.py` | scenari reali con mouse e tastiera: frazione da menu e Tab tra le caselle, radice sulla selezione, esponente sostituito, modifiche che lasciano intatti commenti e a capo, annulla e ripeti, inserimento nel codice, errori, `align*`, matrice personalizzata, matrici a una colonna e sistemi (le righe vuote restano), caselle per gli argomenti vuoti scritti nel codice, delimitatori, esportazione, apertura di file con più formule |
+| `test_ui.py` | scenari reali con mouse e tastiera: frazione da menu e Tab tra le caselle, radice sulla selezione, esponente sostituito, modifiche che lasciano intatti commenti e a capo, annulla e ripeti, inserimento nel codice, errori, `align*`, matrice personalizzata, matrici a una colonna e sistemi (le righe vuote restano), caselle per gli argomenti vuoti scritti nel codice, delimitatori, esportazione, documenti interi (lista delle formule, modifiche riscritte nel file, cronologia per formula), macro del preambolo e scritte a mano, tasti premuti subito dopo il clic sulla formula |
 | `test_menus.py` | ogni voce dei menu (oltre 400) inserita in una formula vuota: deve dare LaTeX che MathJax compila e MathLive rilegge senza errori |
 | `test_fuzz.py` | migliaia di modifiche casuali sulla formula, su formule semplici, annidate, con commenti e delimitatori: il sorgente deve sempre corrispondere alla formula, restare valido e cambiare solo dove serve |
 | `test_pdflatex.py` | compila con pdfLaTeX tutto ciò che l'editor produce (menu, esempi, formule modificate a caso) |
 
-Ultimo risultato: 37/39 scenari superati (i due rimanenti, radice e stile di carattere applicati a una selezione fatta con Ctrl+A, dipendono dalla selezione nel browser di prova); 420 voci di menu valide; su circa 1400 modifiche casuali il 98% riscrive solo il tratto cambiato (in media il 3,3% del testo), con zero incoerenze tra codice e formula e zero sorgenti resi non validi; 446 formule su 446 compilano con pdfLaTeX.
+Ultimo risultato: 52/52 scenari superati; 420 voci di menu valide; su circa 1400 modifiche casuali il 98% riscrive solo il tratto cambiato (in media il 3,2% del testo), con zero incoerenze tra codice e formula e zero sorgenti resi non validi; 446 formule su 446 compilano con pdfLaTeX.
 
 Senza rete, la variabile `LOCAL_LIBS` può puntare a una cartella `node_modules` con `mathlive` e `mathjax`.
 
@@ -170,7 +184,8 @@ Senza rete, la variabile `LOCAL_LIBS` può puntare a una cartella `node_modules`
 |---|---|
 | Ctrl+Z / Ctrl+Y | Annulla / Ripeti (codice e formula condividono la cronologia) |
 | Ctrl+Maiusc+C | Copia il codice LaTeX |
-| Ctrl+S | Scarica la formula come documento `.tex` |
+| Ctrl+S | Scarica la formula come documento `.tex`; con un file aperto, il file intero con le formule aggiornate |
+| Alt+PagSu / Alt+PagGiù | Formula precedente / successiva del file aperto |
 | Alt+F · Alt+E · Alt+R · Alt+I · Alt+S | Frazione · Indici · Radicale · Integrale · Grande operatore |
 | Alt+P · Alt+U · Alt+A · Alt+L · Alt+O · Alt+M | Parentesi · Funzione · Accento · Limite · Operatore · Matrice |
 | Alt+T · Alt+G | Testo normale · Tutti i simboli |
@@ -183,9 +198,10 @@ Senza rete, la variabile `LOCAL_LIBS` può puntare a una cartella `node_modules`
 
 ## Limiti Noti
 
-- La formula a destra è una sola: un file con più formule si apre scegliendo quale modificare.
+- La lista di un documento comprende le formule in display; quelle in linea (`$…$`, `\(…\)`) restano nel testo del file.
 - Negli ambienti `align*` e `gather*` la formula viene mostrata come un unico `aligned`/`gathered`; `\label` e `\nonumber` restano nel sorgente ma non si modificano visivamente.
-- I comandi che MathLive non conosce (macro personali, pacchetti particolari) restano nel sorgente e vengono segnalati, ma nella formula appaiono come testo da non modificare.
+- Le macro personali compaiono nella formula come un blocco unico: si spostano e si cancellano, ma i loro argomenti si cambiano nel codice. Una macro con argomento facoltativo (`\newcommand{\x}[2][0]{…}`) vale solo per l'anteprima MathJax.
+- I comandi di pacchetti che MathLive non conosce, e che non sono definiti come macro, restano nel sorgente e vengono segnalati, ma nella formula appaiono come testo da non modificare.
 - Alcune grafie compatte di MathLive (`x^2` al posto di `x^{2}`) compaiono nelle parti scritte dalla formula; il resto del sorgente mantiene la grafia originale.
 
 ---

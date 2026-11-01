@@ -33,7 +33,7 @@ async def main():
         await pg.keyboard.press('ArrowRight'); await pg.keyboard.type('+x')
         check('si esce dalla frazione e si continua', await src(pg)=='\\frac{1}{2}+x', await src(pg))
         # 3. radice che avvolge la selezione
-        await set_src(pg, 'a+b'); await pg.click('#mf'); await pg.keyboard.press('Control+a')
+        await set_src(pg, 'a+b'); await pg.click('#mf'); await pg.keyboard.press('ControlOrMeta+a')
         await gallery(pg, 'rad', 'Radice quadrata')
         check('radicale applicato alla selezione', await src(pg)=='\\sqrt{a+b}', await src(pg))
         # 4. esponente sostituito
@@ -133,7 +133,7 @@ async def main():
         s = await src(pg)
         check('limite: variabile, punto e funzione', s.replace(' ','') in ('\\lim_{x\\to\\infty}f(x)',), s)
         # 20. stile di carattere sulla selezione
-        await set_src(pg, 'R'); await pg.click('#mf'); await pg.keyboard.press('Control+a')
+        await set_src(pg, 'R'); await pg.click('#mf'); await pg.keyboard.press('ControlOrMeta+a')
         await pg.click('[data-pop="fonts"]'); await pg.wait_for_selector('#pop .gi'); await pg.click('#pop .gi[title^="Lavagna"]'); await pg.wait_for_timeout(60)
         check('stile Lavagna sulla selezione', await src(pg)=='\\mathbb{R}', await src(pg))
         # 21. annidamento profondo
@@ -164,14 +164,49 @@ async def main():
         await pg.click('#b-export'); await pg.wait_for_selector('#ex-code'); await pg.wait_for_timeout(300)
         check('finestra Esporta', 'cancel' in await pg.inner_text('#m-b'))
         await pg.click('#m-x')
-        # 23. apertura di un documento con più formule
-        doc = "\\documentclass{article}\n\\begin{document}\nTesto $a$.\n\\[ x^2 \\]\n% \\[ commentata \\]\n\\begin{equation}\n  E=mc^2 \\label{eq:e}\n\\end{equation}\n\\begin{align*} a&=b \\end{align*}\n\\end{document}"
-        await pg.evaluate("t=>loadText(t,'prova.tex')", doc); await pg.wait_for_timeout(300)
-        n = await pg.evaluate("document.querySelectorAll('#m-b [data-f]').length")
-        check('file .tex: scelta tra le formule (commenti esclusi)', n==3, n)
-        await pg.click('#m-b [data-f="1"]'); await pg.wait_for_timeout(200)
+        # 23. apertura di un documento: lista delle formule, macro del preambolo, modifiche riscritte nel file
+        doc = "\\documentclass{article}\n\\usepackage{amssymb}\n\\newcommand{\\R}{\\mathbb{R}}\n\\DeclareMathOperator{\\sen}{sen}\n\\begin{document}\nTesto $a$ e una riga\\\\[2pt] spaziata.\n\\[ x^2 \\]\n% \\[ commentata \\]\n\\begin{equation}\n  E=mc^2 \\label{eq:e}\n\\end{equation}\n\\begin{align*} f\\colon \\R\\to\\R, \\quad f(x) &= \\sen x \\end{align*}\n\\end{document}"
+        await pg.evaluate("t=>loadText(t,'prova.tex')", doc); await pg.wait_for_timeout(400)
+        n = await pg.evaluate("document.querySelectorAll('#fl-items .fi').length")
+        check('file .tex: lista delle formule (commenti e \\\\[2pt] esclusi)', n==3, n)
+        check('la prima formula è nell\'editor', await src(pg)=='\\[ x^2 \\]', await src(pg))
+        check('macro lette dal preambolo', await pg.evaluate('Macros.count()')==2, await pg.evaluate('Macros.text()'))
+        await click_mf_end(pg); await pg.keyboard.type('+1'); await pg.wait_for_timeout(500)
+        t = await pg.evaluate('Formulas.text()')
+        check('modifica riscritta nel documento, il resto è identico', t==doc.replace('x^2 ','x^2+1 '), t)
+        check('formula modificata segnata nella lista', await pg.evaluate("document.querySelectorAll('#fl-items .fi.mod').length")==1)
+        await pg.click('#fl-items .fi[data-k="1"]'); await pg.wait_for_timeout(200)
         s = await src(pg)
         check('formula scelta caricata con il suo ambiente', s.startswith('\\begin{equation}') and '\\label{eq:e}' in s, s)
+        await pg.click('#mf'); await pg.keyboard.press('Control+z'); await pg.wait_for_timeout(150)
+        check('cronologia separata: Ctrl+Z su un\'altra formula non tocca la modifica', await pg.evaluate('Formulas.text()')==t, await pg.evaluate('Formulas.text()'))
+        await pg.click('#fl-items .fi[data-k="0"]'); await pg.click('#mf'); await pg.keyboard.press('Control+z'); await pg.wait_for_timeout(150)
+        check('Ctrl+Z annulla la modifica della sua formula', await pg.evaluate('Formulas.text()')==doc, await src(pg))
+        await pg.click('#fl-items .fi[data-k="1"]')
+        await pg.keyboard.press('Alt+PageDown'); await pg.wait_for_timeout(500)
+        s = await src(pg); iss = await pg.evaluate('St.issues.map(x=>x.msg)')
+        check('Alt+PagGiù: formula successiva; macro senza avvisi', s.startswith('\\begin{align*}') and not iss, iss)
+        await click_mf_end(pg); await pg.keyboard.type('+1'); await pg.wait_for_timeout(300)
+        s = await src(pg)
+        check('formula con macro modificata: \\R e \\sen restano', '\\R\\to\\R' in s and '\\sen x+1' in s, s)
+        await pg.evaluate('Formulas.close(false)'); await pg.wait_for_timeout(100)
+        check('documento chiuso: lista nascosta', await pg.evaluate("document.getElementById('flist').hidden"))
+        # 23c. tasti premuti subito dopo il clic sulla formula, venendo dal codice: vanno alla formula, non al codice
+        await set_src(pg, 'x^2'); await pg.click('#ed'); await pg.wait_for_timeout(100)
+        await pg.click('#mf'); await pg.keyboard.press('End'); await pg.keyboard.type('+1'); await pg.wait_for_timeout(200)
+        check('digitazione immediata dopo il clic: arriva alla formula', await src(pg)=='x^2+1' and await mfv(pg)=='x^2+1', (await src(pg), await mfv(pg)))
+        # 23d. scrittura all'inizio di una formula con \label: a capo e rientro restano prima
+        await set_src(pg, '\\begin{equation}\n  E=mc^2 \\label{eq:e}\n\\end{equation}'); await pg.click('#ed'); await pg.wait_for_timeout(100)
+        await pg.click('#mf'); await pg.keyboard.press('Home'); await pg.keyboard.type('k'); await pg.wait_for_timeout(200)
+        check('inizio di una formula con \\label', await src(pg)=='\\begin{equation}\n  kE=mc^2 \\label{eq:e}\n\\end{equation}', await src(pg))
+        # 23b. finestra delle macro
+        await pg.click('#b-mac'); await pg.fill('#mac-t', '\\newcommand{\\norm}[1]{\\left\\lVert #1\\right\\rVert}'); await pg.click('#mac-ok')
+        await set_src(pg, '\\norm{v} \\geq 0'); await pg.wait_for_timeout(700)
+        iss = await pg.evaluate('St.issues.map(x=>x.msg)'); pv = await pg.evaluate("document.getElementById('pvst').textContent")
+        check('macro scritta a mano: nessun avviso e MathJax compila', not iss and pv=='compila', (iss, pv))
+        tex = await pg.evaluate('texDocument()')
+        check('documento .tex esportato con le macro nel preambolo', '\\newcommand{\\norm}' in tex.split('\\begin{document}')[0], tex)
+        await pg.evaluate("Macros.set('')")
         # 24. esempi: tutti compilano
         bad = await pg.evaluate('''async()=>{ const bad=[]; for (const [t,s] of EXAMPLES){ setSource(s); await Preview.check(); if (St.issues.some(x=>x.kind==='e')) bad.push(t); } return bad; }''')
         check('tutti gli esempi sono LaTeX valido', not bad, bad)

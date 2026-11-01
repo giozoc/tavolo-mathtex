@@ -109,7 +109,8 @@ const Sync = (()=>{
     function attempt(i, j, k){
       let L=-1; for (let p=i-1;p>=0;p--) if (m[p]>=0){ L=p; break; }
       let R=-1; for (let p=j;p<Tp.length;p++) if (m[p]>=0){ R=p; break; }
-      const gs = L>=0 ? Ts[m[L]].e : doc.bs, ge = R>=0 ? Ts[m[R]].s : doc.be;
+      /* senza nulla a sinistra si parte dal primo token del corpo: a capo, rientro e commenti iniziali restano prima */
+      const gs = L>=0 ? Ts[m[L]].e : Ts.length ? Math.min(Ts[0].s, R>=0 ? Ts[m[R]].s : doc.be) : doc.bs, ge = R>=0 ? Ts[m[R]].s : doc.be;
       if (ge<gs) return null;
       const inGap = Ts.filter(t=>t.s>=gs && t.e<=ge);
       let q0=i, q1=k; while (q0<q1 && Tn[q0].t===' ' && q1-q0>1) q0++; while (q1>q0 && Tn[q1-1].t===' ' && q1-q0>1) q1--;

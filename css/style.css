@@ -109,6 +109,23 @@ i.dd{display:inline-block;width:0;height:0;border:4px solid transparent;border-t
 /* corpo */
 #main{flex:1;display:flex;min-height:0}
 #left{width:40%;min-width:260px;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line);min-height:0}
+/* formule del file aperto */
+#flist{width:200px;flex:none;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line);min-height:0}
+#flist[hidden]{display:none}
+#flist .tag{font:10.5px var(--f-code);letter-spacing:0;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--ink)}
+#fl-mod{font-size:11px;letter-spacing:0;text-transform:none;color:var(--warn)}
+#fl-items{flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin}
+.fi{position:relative;display:flex;gap:6px;align-items:stretch;border:1px solid var(--line);background:var(--panel2);border-radius:7px;padding:5px;text-align:left;flex:none}
+.fi:hover{border-color:var(--accent)}
+.fi.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.fi .fn{font:11px var(--f-code);color:var(--muted);min-width:16px;text-align:right;padding-top:2px}
+.fi.on .fn{color:var(--accent);font-weight:600}
+.fi.mod::after{content:"";position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--warn)}
+.fi .fv{flex:1;min-width:0;min-height:38px;max-height:84px;background:#fff;color:#1a2130;border-radius:5px;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:11px;padding:4px}
+.fi .fv svg{max-width:100%;max-height:76px}
+.fi .fv .tx{font:10px var(--f-code);color:#7a8294;word-break:break-all}
+.fl-foot{display:flex;align-items:center;gap:6px;padding:6px 8px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)}
+#fl-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--f-code)}
 #split{width:6px;cursor:col-resize;background:transparent;margin-left:-3px;margin-right:-3px;z-index:3;touch-action:none}
 #split:hover{background:var(--accent);opacity:.3}
 #right{flex:1;position:relative;min-width:0;background:var(--bg);display:flex;flex-direction:column}
@@ -187,6 +204,9 @@ math-field#mf::part(content){justify-content:safe center}
 #modal .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;max-width:780px;width:100%;max-height:90%;overflow:auto;box-shadow:0 20px 60px rgb(0 0 0/.3)}
 #modal .box h2{margin:0;padding:14px 18px;font-size:16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--panel);z-index:1}
 #modal .box .bd{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+#modal textarea.mac{min-height:150px;resize:vertical;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;font:12px/1.5 var(--f-code);white-space:pre;tab-size:2}
+#modal code{font:12px var(--f-code)}
+.keys td small{color:var(--muted);font-family:var(--f-ui)}
 #modal pre{margin:0;max-height:300px;overflow:auto;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;font:12px/1.5 var(--f-code);white-space:pre}
 #modal img{max-width:100%;background:#fff;border:1px solid var(--line);border-radius:8px;align-self:center}
 #modal p{margin:0;color:var(--muted);font-size:13px;max-width:65ch}
@@ -211,6 +231,9 @@ math-field#mf::part(content){justify-content:safe center}
   #left{width:auto!important;min-width:0;height:40vh;border-right:0;border-bottom:1px solid var(--line);order:2}
   #right{height:52vh;flex:none;order:1}
   #split{display:none}
+  #flist{width:auto;order:0;max-height:24vh;border-right:0;border-bottom:1px solid var(--line)}
+  #fl-items{flex-direction:row;overflow-x:auto;overflow-y:hidden}
+  .fi{width:150px}
   #desk{padding:14px 10px 56px}
   #mfbox{padding:26px 10px}
   .tb .lbl{display:none}

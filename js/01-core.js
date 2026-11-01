@@ -41,7 +41,7 @@ $('b-theme').onclick=()=>{
 /* ---------- divisore tra le due ante ---------- */
 (()=>{ const sp=$('split'); let on=false;
   sp.addEventListener('pointerdown', e=>{ on=true; sp.setPointerCapture(e.pointerId); });
-  sp.addEventListener('pointermove', e=>{ if(!on) return; const w=clamp(e.clientX,240,window.innerWidth-320); $('left').style.width=w+'px'; });
+  sp.addEventListener('pointermove', e=>{ if(!on) return; const x0=$('left').getBoundingClientRect().left; const w=clamp(e.clientX-x0,240,window.innerWidth-x0-320); $('left').style.width=w+'px'; });
   sp.addEventListener('pointerup', ()=>{ on=false; store.set('tl-split',$('left').style.width); });
   const w=store.get('tl-split'); if (w) $('left').style.width=w;
 })();

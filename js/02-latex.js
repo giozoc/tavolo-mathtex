@@ -68,6 +68,43 @@ function rewrap(src, env){
   return pre + open + body + close + post;
 }
 
+/* ---------- macro personali: \newcommand, \renewcommand, \providecommand, \DeclareMathOperator, \def ----------
+   Si leggono da un testo qualsiasi (di solito il preambolo). def è il corpo con #1…#n; opt è il valore predefinito
+   del primo argomento facoltativo (\newcommand{\x}[2][0]{…}), che MathLive non sa gestire: lo capisce solo MathJax. */
+function readGroup(t, i){
+  if (t[i]!=='{') return -1;
+  let d=0;
+  for (let k=i;k<t.length;k++){
+    const c=t[k];
+    if (c==='\\'){ k++; continue; }
+    if (c==='{') d++; else if (c==='}' && --d===0) return k;
+  }
+  return -1;
+}
+function parseMacros(text){
+  const t = text.replace(/(^|[^\\])%[^\n]*/g, '$1');
+  const out=[], re=/\\(newcommand|renewcommand|providecommand|DeclareMathOperator|def)(?![a-zA-Z@])(\*?)\s*/g;
+  let m;
+  while ((m=re.exec(t))){
+    let i=re.lastIndex;
+    const nm = /^\{\s*\\([a-zA-Z@]+)\s*\}|^\\([a-zA-Z@]+)/.exec(t.slice(i)); if (!nm) continue;
+    const name=nm[1]||nm[2]; i+=nm[0].length;
+    let args=0, opt=null;
+    if (m[1]==='def'){ const pm=/^(?:#[1-9])*/.exec(t.slice(i)); args=pm[0].length/2; i+=pm[0].length; }
+    else if (m[1]!=='DeclareMathOperator'){
+      const am=/^\s*\[\s*(\d)\s*\]/.exec(t.slice(i)); if (am){ args=+am[1]; i+=am[0].length; }
+      const om=/^\s*\[([^\]]*)\]/.exec(t.slice(i)); if (am && om){ opt=om[1]; i+=om[0].length; }
+    }
+    while (/\s/.test(t[i]||'')) i++;
+    const e = readGroup(t, i); if (e<0) continue;
+    let def = t.slice(i+1, e);
+    if (m[1]==='DeclareMathOperator') def = `\\operatorname${m[2]}{${def}}`;
+    out.push({name, args, opt, def, text:t.slice(m.index, e+1)});
+    re.lastIndex = e+1;
+  }
+  return out;
+}
+
 /* ---------- evidenziazione ---------- */
 function hlText(t){
   return t.replace(/(%[^\n]*)|(\\(?:begin|end)\s*\{[^}\n]*\})|(\\\\)|(\\[a-zA-Z@]+|\\.)|(\d+(?:[.,]\d+)?)|([\^_])|(&)|([\[\]])|([{}])|([<>"])/g,

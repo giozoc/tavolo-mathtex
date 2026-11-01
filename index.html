@@ -29,6 +29,7 @@
   <div class="sp"></div>
   <div class="grp">
     <button class="tb" id="b-open" title="Apri file .tex"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h4l1.5 1.5H14V13H2z"/></svg><span class="lbl">Apri</span></button>
+    <button class="tb" id="b-mac" title="Macro personali: \newcommand e \DeclareMathOperator del preambolo"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5.5 3.5C4 3.5 4 4.5 4 6s-1 2-1.5 2C3 8 4 8.5 4 10s0 2.5 1.5 2.5M10.5 3.5c1.5 0 1.5 1 1.5 2.5s1 2 1.5 2c-.5 0-1.5.5-1.5 2s0 2.5-1.5 2.5"/></svg><span class="lbl">Macro</span></button>
     <button class="tb" id="b-ex" title="Esempi"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h10v12H3zM6 5h4M6 8h4M6 11h2"/></svg><span class="lbl">Esempi</span></button>
     <button class="tb" id="b-export" title="Esporta LaTeX, documento .tex, SVG, PNG, MathML"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3M3 12v2h10v-2"/></svg><span class="lbl">Esporta</span></button>
     <button class="tb" id="b-help" title="Scorciatoie da tastiera (F1)" aria-label="Scorciatoie"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="4" width="13" height="8" rx="1.5"/><path d="M4 7h1M7 7h2M11 7h1M5 9.5h6"/></svg></button>
@@ -85,6 +86,13 @@
 </nav>
 
 <div id="main">
+  <aside id="flist" hidden aria-label="Formule del file">
+    <div class="pane-h"><span>Formule</span><span class="tag" id="fl-n"></span><span class="sp"></span><span id="fl-mod"></span></div>
+    <div id="fl-items"></div>
+    <div class="fl-foot"><span id="fl-name"></span>
+      <button class="pbtn" id="fl-save" title="Scarica il file con le formule aggiornate (Ctrl+S)">Scarica</button>
+      <button class="pbtn" id="fl-close" title="Chiudi il documento e lascia la formula nell'editor" aria-label="Chiudi il documento">×</button></div>
+  </aside>
   <section id="left" aria-label="Sorgente LaTeX">
     <div class="pane-h"><span>Sorgente LaTeX</span><span class="sp"></span><span id="pos">r 1, c 1</span>
       <button class="pbtn" id="b-copy2" title="Copia il sorgente così com'è">Copia</button></div>
@@ -131,6 +139,7 @@
 <script src="js/06-catalog.js"></script>
 <script src="js/07-ribbon.js"></script>
 <script src="js/08-preview.js"></script>
-<script src="js/09-panel.js"></script>
+<script src="js/09-document.js"></script>
+<script src="js/10-panel.js"></script>
 </body>
 </html>

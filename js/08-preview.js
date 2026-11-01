@@ -62,7 +62,7 @@ const Preview = (()=>{
       await MJ.whenReady(); if (my!==seq) return;
       const mjIn = doc.inner ? src.slice(doc.os, doc.ce) : src.slice(doc.bs, doc.be);
       try {
-        const node = await MathJax.tex2svgPromise(mjIn.trim() || '\\phantom{x}', {display: $('stylesel').value!=='inline'});
+        const node = await MathJax.tex2svgPromise(Macros.mj(mjIn.trim() || '\\phantom{x}'), {display: $('stylesel').value!=='inline'});
         if (my!==seq) return;
         const er = node.querySelector('[data-mjx-error]');
         if (er){ mjErr = er.getAttribute('data-mjx-error'); }

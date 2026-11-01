@@ -35,7 +35,7 @@ function setSource(t, {record=true, from='tool', caret=null, toMF=true, flash=nu
     if (caret!==null) ed.setSelectionRange(caret,caret); else ed.setSelectionRange(Math.min(a,t.length),Math.min(b,t.length));
     ed.scrollTop=sc;
   }
-  store.set('tl-src', t);
+  store.set('tl-src', t); Formulas.update();
   setFlash(flash);
   if (toMF) MF.fromSource();
   updateHL(); updatePos(); syncEnvSel();
@@ -46,7 +46,7 @@ function setFlash(range){
   if (range){ scrollEdTo(range[0], true); flashTimer=setTimeout(()=>{ St.flash=null; updateHL(); }, 1400); }
 }
 function restore(entry){
-  St.src = entry.src; ed.value = entry.src; store.set('tl-src', entry.src);
+  St.src = entry.src; ed.value = entry.src; store.set('tl-src', entry.src); Formulas.update();
   St.flash=null; MF.fromSource(); if (entry.sel) MF.setSelection(entry.sel);
   updateHL(); updatePos(); syncEnvSel(); scheduleCheck(); updateUndoBtns();
 }
@@ -93,7 +93,7 @@ function acUpdate(){
   const box=$('ac');
   if (!m || m[1].length<1){ box.hidden=true; acItems=[]; return; }
   const w=m[1];
-  const all = Catalog.acList();
+  const all = [...Macros.ac(), ...Catalog.acList()];
   acItems = all.filter(x=>x.c.startsWith(w) && x.c!==w).sort((x,y)=>x.c.length-y.c.length).slice(0,12);
   acRange=[p-w.length-1,p]; acSel=0;
   if (!acItems.length){ box.hidden=true; return; }
