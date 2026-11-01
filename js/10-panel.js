@@ -121,7 +121,7 @@ function loadText(text, name){
   const defs = parseMacros(text);
   if (defs.length || full) Macros.set(defs.map(m=>m.text).join('\n'));
   const mac = defs.length ? ` · ${defs.length} macro dal preambolo` : '';
-  const rs = full || text.length>4000 ? findFormulas(text) : [];
+  const all = findFormulas(text), rs = full || all.length>1 ? all : [];
   if (!rs.length){ Formulas.close(false); setSource(text.replace(/\s+$/,'')); toast('Aperto '+name+mac); return; }
   Formulas.open(name, text, rs);
   toast(`${name}: ${rs.length} ${rs.length===1?'formula':'formule'}${mac}`);
@@ -182,7 +182,7 @@ document.addEventListener('keydown', e=>{
   const DEF = EXAMPLES[0][1];
   const saved = store.get('tl-src');
   St.lastPane='mf';
-  if (!Formulas.restore()) setSource(saved!==null ? saved : DEF, {record:false});
+  if (!Formulas.restore()){ setSource(saved!==null ? saved : DEF, {record:false}); Formulas.split(); }
   if ($('stylesel').value==='inline') MF.setDisplay(false);
   updateUndoBtns();
 })();

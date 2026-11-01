@@ -191,6 +191,28 @@ async def main():
         check('formula con macro modificata: \\R e \\sen restano', '\\R\\to\\R' in s and '\\sen x+1' in s, s)
         await pg.evaluate('Formulas.close(false)'); await pg.wait_for_timeout(100)
         check('documento chiuso: lista nascosta', await pg.evaluate("document.getElementById('flist').hidden"))
+        # 23e. più formule incollate nel codice: diventano l'elenco, il testo resta identico
+        paste = "\\[\n  e^{i\\pi} + 1 = 0\n\\]\n\n\\[\n  \\int_{-\\infty}^{+\\infty} e^{-x^2}\\,dx % risultato notevole\n  = \\sqrt{\\pi}\n\\]\n\n\\begin{equation}\n  \n  x_{1,2} = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\n\\end{equation}\n\n\\begin{equation}\n  \\norma{\\mathbf{v}} = \\sqrt{\\sum_{k=1}^{n} v_k^2}\n\\end{equation}\n\n\n\n\\begin{align*}\n  (a+b)^2 &= a^2 + 2ab + b^2 \\\\\n  (a-b)^2 &= a^2 - 2ab + b^2 \\\\\n  a^2 - b^2 &= (a+b)(a-b)\n\\end{align*}\n\n\\begin{gather*}\n  \\lim_{x \\to 0} \\frac{\\sin x}{x} = 1 \\\\\n  \\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}\n\\end{gather*}\n\n\n\\[\n  |x| =\n  \\begin{cases}\n    x  & \\text{se } x \\geq 0 \\\\\n    -x & \\text{se } x < 0\n  \\end{cases}\n\\]\n\n\\[\n  \\begin{pmatrix}\n    2 & -1 & 0 \\\\\n    -1 & 2 & -1 \\\\\n    0 & -1 & 2\n  \\end{pmatrix}\n  \\begin{pmatrix} x \\\\ y \\\\ z \\end{pmatrix}\n  =\n  \\begin{pmatrix} 1 \\\\ 0 \\\\ 1 \\end{pmatrix}\n\\]\n\n\n\\[ \\det A = \\begin{vmatrix} a & b \\\\ c & d \\end{vmatrix} = ad - bc,\n  \\qquad\n  e^x = \\sum_{n=0}^{\\infty} \\frac{x^n}{n!}\n\\]\n"
+        # incolla com'è nel browser: evento paste, poi il testo inserito nell'area del codice (gli appunti del browser di prova non sono affidabili)
+        await set_src(pg, ''); await pg.click('#ed')
+        await pg.evaluate("t=>{ ed.dispatchEvent(new ClipboardEvent('paste', {bubbles:true})); document.execCommand('insertText', false, t); }", paste); await pg.wait_for_timeout(800)
+        n = await pg.evaluate("document.querySelectorAll('#fl-items .fi').length")
+        check('formule incollate: 9 voci nell\'elenco', n==9, n)
+        check('testo incollato conservato identico', await pg.evaluate('Formulas.text()')==paste)
+        iss = await pg.evaluate('St.issues.map(x=>x.msg)')
+        check('prima formula senza errori di annidamento', await src(pg)=='\\[\n  e^{i\\pi} + 1 = 0\n\\]' and not iss, (await src(pg), iss))
+        bad = await pg.evaluate("async()=>{ const bad=[]; for (let k=0;k<9;k++){ Formulas.select(k); await Preview.check(); const e=St.issues.filter(x=>x.kind==='e'); if (e.length) bad.push([k, e.map(x=>x.msg)]); } return bad; }")
+        check('ogni formula incollata compila (\\norma solo avviso)', not bad, bad)
+        # 23f. due formule scritte nel codice di una voce: messaggio cliccabile che le divide
+        await pg.evaluate("Formulas.select(0)"); await set_src(pg, '\\[ a \\]\n\\[ b \\]'); await pg.wait_for_timeout(700)
+        await pg.click('#msgs [data-split]'); await pg.wait_for_timeout(300)
+        n = await pg.evaluate("document.querySelectorAll('#fl-items .fi').length")
+        t = await pg.evaluate('Formulas.text()')
+        check('due formule in una voce: divise in due voci', n==10 and await src(pg)=='\\[ a \\]' and t.startswith('\\[ a \\]\n\\[ b \\]\n\n\\[\n  \\int'), (n, t[:60]))
+        await pg.evaluate('Formulas.close(false)')
+        # 23g. un align* dentro il corpo non blocca la formula nell'ambiente per i valori successivi
+        await set_src(pg, '\\[ a \\] \\begin{align*} c \\end{align*}'); await set_src(pg, 'x^2')
+        check('dopo un align* annidato la formula torna normale', await mfv(pg)=='x^2', await mfv(pg))
         # 23c. tasti premuti subito dopo il clic sulla formula, venendo dal codice: vanno alla formula, non al codice
         await set_src(pg, 'x^2'); await pg.click('#ed'); await pg.wait_for_timeout(100)
         await pg.click('#mf'); await pg.keyboard.press('End'); await pg.keyboard.type('+1'); await pg.wait_for_timeout(200)

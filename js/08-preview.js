@@ -55,6 +55,9 @@ const Preview = (()=>{
       mlMsgs.push({s:doc.bs, e:doc.bs, kind:'w', msg:'editor visuale: '+msg});
     }
     issues.push(...mlMsgs);
+    /* più formule nel sorgente: LaTeX le vuole separate, e la formula a destra ne mostra una sola */
+    const nfs = findFormulas(src).length;
+    if (nfs>1) issues.unshift({s:doc.bs, e:doc.bs, kind:'e', split:true, msg:`il sorgente contiene ${nfs} formule distinte: clic qui per aprirle come elenco, una per voce`});
     St.issues = issues; updateHL(); listMsgs(null);
     /* MathJax: verifica indipendente e anteprima */
     let mjErr=null;
@@ -85,14 +88,14 @@ const Preview = (()=>{
   }
   function listMsgs(mjErr){
     const w = St.issues.slice().sort((a,b)=>({e:0,w:1,i:2}[a.kind]-{e:0,w:1,i:2}[b.kind]) || a.s-b.s);
-    $('msgs').innerHTML = w.slice(0,40).map(x=>`<div class="${x.kind}" data-p="${x.s}">riga ${lineOf(St.src,x.s)} · ${esc(x.msg)}</div>`).join('');
+    $('msgs').innerHTML = w.slice(0,40).map(x=>`<div class="${x.kind}" data-p="${x.s}"${x.split?' data-split="1"':''}>riga ${lineOf(St.src,x.s)} · ${esc(x.msg)}</div>`).join('');
     const ne = w.filter(x=>x.kind==='e').length, nw = w.filter(x=>x.kind==='w').length;
     const m=$('st-msg');
     m.className = ne ? 'err' : nw ? 'wrn' : 'ok';
     m.textContent = ne ? `${ne} ${ne===1?'errore':'errori'}` : nw ? `${nw} ${nw===1?'avviso':'avvisi'}` : 'LaTeX valido';
     const pst=$('pvst'); pst.className = ne||mjErr ? 'err' : 'ok'; pst.textContent = mjErr ? 'non compila' : ne ? 'errori nel sorgente' : 'compila';
   }
-  $('msgs').addEventListener('click', e=>{ const d=e.target.closest('[data-p]'); if(!d) return; const p=+d.dataset.p; ed.focus(); const it=St.issues.find(x=>x.s===p); ed.setSelectionRange(p, it?it.e:p); scrollEdTo(p); });
+  $('msgs').addEventListener('click', e=>{ const d=e.target.closest('[data-p]'); if(!d) return; if (d.dataset.split){ Formulas.split(); return; } const p=+d.dataset.p; ed.focus(); const it=St.issues.find(x=>x.s===p); ed.setSelectionRange(p, it?it.e:p); scrollEdTo(p); });
   return {check, lastOK:()=>lastOK};
 })();
 function scheduleCheck(){ clearTimeout(checkTimer); checkTimer=setTimeout(Preview.check, 180); }

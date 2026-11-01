@@ -48,11 +48,31 @@ const Formulas = (()=>{
   const docText = () => F.gaps.map((g,k)=> g + (k<F.fs.length ? F.fs[k] : '')).join('');
   function persist(){ clearTimeout(saveT); saveT=setTimeout(()=>{ try { localStorage.setItem('tl-doc', F ? JSON.stringify({name:F.name, gaps:F.gaps, fs:F.fs, orig:F.orig, cur:F.cur}) : ''); } catch(e){} }, 300); }
 
-  function open(name, text, ranges){
+  function cut(text, ranges){
     const gaps=[], fs=[]; let p=0;
     for (const [s,e] of ranges){ gaps.push(text.slice(p,s)); fs.push(text.slice(s,e)); p=e; }
     gaps.push(text.slice(p));
+    return {gaps, fs};
+  }
+  function open(name, text, ranges){
+    const {gaps, fs} = cut(text, ranges);
     start({name, gaps, fs, orig:fs.slice(), cur:0});
+  }
+  /* un sorgente con più formule (incollate, o scritte una dopo l'altra) non è una formula sola: diventa l'elenco.
+     Con un documento aperto le nuove formule prendono il posto di quella corrente, con il testo tra l'una e l'altra */
+  function split(){
+    const rs = findFormulas(St.src); if (rs.length<2) return false;
+    const {gaps, fs} = cut(St.src, rs);
+    if (!F){ open('formule.tex', St.src, rs); return true; }
+    const k=F.cur, n=fs.length;
+    clearTimeout(histTimer); histTimer=null;
+    F.h[k] = {hist, fut};
+    F.gaps.splice(k, 2, F.gaps[k]+gaps[0], ...gaps.slice(1, n), gaps[n]+F.gaps[k+1]);
+    F.fs.splice(k, 1, ...fs);
+    F.orig.splice(k, 1, F.orig[k], ...fs.slice(1).map(()=>null));
+    F.h.splice(k, 1, F.h[k], ...fs.slice(1).map(()=>({hist:[], fut:[]})));
+    render(); setSource(F.fs[k], {record:false}); updateUndoBtns(); persist();
+    return true;
   }
   function start(d){
     F = {...d, h: d.fs.map(()=>({hist:[], fut:[]}))};
@@ -122,5 +142,5 @@ const Formulas = (()=>{
   function refresh(){ if (F) F.fs.forEach((_,k)=>thumb(k)); }
   $('fl-items').addEventListener('click', e=>{ const b=e.target.closest('.fi'); if (b) select(+b.dataset.k); });
   $('fl-save').onclick=save; $('fl-close').onclick=()=>close();
-  return {open, select, update, save, close, restore, refresh, active:()=>!!F, name:()=>F&&F.name, text:()=>F?docText():'', step:d=>F&&select(F.cur+d)};
+  return {open, split, select, update, save, close, restore, refresh, active:()=>!!F, name:()=>F&&F.name, text:()=>F?docText():'', step:d=>F&&select(F.cur+d)};
 })();

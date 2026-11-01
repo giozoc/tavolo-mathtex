@@ -54,7 +54,8 @@ Scrivere una formula in LaTeX significa ricordare comandi, contare graffe e rico
 - annulla e ripeti con **una sola cronologia** per codice e formula; cancella e ripristina
 
 **Documenti interi**
-- aprendo un file `.tex` (pulsante *Apri* o trascinandolo sulla pagina) le sue formule in display (`\[…\]`, `$$…$$`, `equation`, `align`, `gather`, `multline`, `flalign`, `displaymath`, con o senza asterisco) compaiono in una **lista laterale** con l'anteprima; quelle commentate restano fuori
+- aprendo un file `.tex` (pulsante *Apri* o trascinandolo sulla pagina), o **incollando nel codice più formule insieme**, le formule in display (`\[…\]`, `$$…$$`, `equation`, `align`, `gather`, `multline`, `flalign`, `displaymath`, con o senza asterisco) compaiono in una **lista laterale** con l'anteprima; quelle commentate restano fuori
+- se nel codice di una formula ne compaiono più d'una (LaTeX non le accetta annidate), un messaggio lo segnala e con un clic le divide in voci separate
 - un clic su una formula la porta nell'editor; **Alt+PagSu** e **Alt+PagGiù** passano alla precedente e alla successiva
 - ogni modifica torna nel documento, nel punto da cui viene la formula, senza toccare il resto del file; le formule cambiate sono segnate nella lista
 - ogni formula ha la sua cronologia di annulla e ripeti
@@ -167,12 +168,12 @@ Le prove usano Playwright con Chromium (`pip install playwright && playwright in
 
 | Prova | Cosa controlla |
 |---|---|
-| `test_ui.py` | scenari reali con mouse e tastiera: frazione da menu e Tab tra le caselle, radice sulla selezione, esponente sostituito, modifiche che lasciano intatti commenti e a capo, annulla e ripeti, inserimento nel codice, errori, `align*`, matrice personalizzata, matrici a una colonna e sistemi (le righe vuote restano), caselle per gli argomenti vuoti scritti nel codice, delimitatori, esportazione, documenti interi (lista delle formule, modifiche riscritte nel file, cronologia per formula), macro del preambolo e scritte a mano, tasti premuti subito dopo il clic sulla formula |
+| `test_ui.py` | scenari reali con mouse e tastiera: frazione da menu e Tab tra le caselle, radice sulla selezione, esponente sostituito, modifiche che lasciano intatti commenti e a capo, annulla e ripeti, inserimento nel codice, errori, `align*`, matrice personalizzata, matrici a una colonna e sistemi (le righe vuote restano), caselle per gli argomenti vuoti scritti nel codice, delimitatori, esportazione, documenti interi (lista delle formule, modifiche riscritte nel file, cronologia per formula), macro del preambolo e scritte a mano, tasti premuti subito dopo il clic sulla formula, più formule incollate insieme |
 | `test_menus.py` | ogni voce dei menu (oltre 400) inserita in una formula vuota: deve dare LaTeX che MathJax compila e MathLive rilegge senza errori |
 | `test_fuzz.py` | migliaia di modifiche casuali sulla formula, su formule semplici, annidate, con commenti e delimitatori: il sorgente deve sempre corrispondere alla formula, restare valido e cambiare solo dove serve |
 | `test_pdflatex.py` | compila con pdfLaTeX tutto ciò che l'editor produce (menu, esempi, formule modificate a caso) |
 
-Ultimo risultato: 52/52 scenari superati; 420 voci di menu valide; su circa 1400 modifiche casuali il 98% riscrive solo il tratto cambiato (in media il 3,2% del testo), con zero incoerenze tra codice e formula e zero sorgenti resi non validi; 446 formule su 446 compilano con pdfLaTeX.
+Ultimo risultato: 58/58 scenari superati; 420 voci di menu valide; su circa 1400 modifiche casuali il 98% riscrive solo il tratto cambiato (in media il 3,2% del testo), con zero incoerenze tra codice e formula e zero sorgenti resi non validi; 446 formule su 446 compilano con pdfLaTeX.
 
 Senza rete, la variabile `LOCAL_LIBS` può puntare a una cartella `node_modules` con `mathlive` e `mathjax`.
 

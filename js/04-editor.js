@@ -55,8 +55,12 @@ function redo(){ if(!fut.length){ toast('Niente da ripetere'); return; } let sel
 function updateUndoBtns(){ $('b-undo').disabled=!hist.length; $('b-redo').disabled=!fut.length; }
 $('b-undo').onclick=undo; $('b-redo').onclick=redo;
 
+let pasted=false;
+ed.addEventListener('paste', ()=>{ pasted=true; });
 ed.addEventListener('input', ()=>{
   setSource(ed.value, {from:'code', coalesce:true});
+  /* più formule incollate insieme: si aprono come elenco */
+  if (pasted){ pasted=false; if (Formulas.split()){ toast('Formule incollate: una per voce dell\'elenco'); return; } }
   acUpdate();
 });
 ed.addEventListener('focus', ()=>{ St.lastPane='src'; });

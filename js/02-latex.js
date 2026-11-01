@@ -196,9 +196,13 @@ const PH = String.raw`\\placeholder(?:\[[^\]]*\])?\{\}`;
 const OPT_CMD = String.raw`\\(?:sqrt|x[a-zA-Z]*arrow)`;
 /* comandi il cui argomento non è una formula: un {} vuoto resta com'è */
 const NO_SLOT = /^\\(?:begin|end|text[a-z]*|mbox|hbox|operatorname|label|tag|ref|eqref|color|textcolor|colorbox|hspace|vspace|kern|mspace)$/;
+/* align, align*, displaymath ed eqnarray dentro il corpo (per esempio due formule di seguito nel sorgente) fanno della
+   radice di MathLive un ambiente, che resta tale anche per tutti i valori successivi: alla formula arriva l'equivalente annidabile */
+const ROOT_ENVS = {'align':'aligned', 'align*':'aligned', 'displaymath':'gathered', 'eqnarray':'array}{rcl'};
+const nestEnvs = feed => feed.replace(/\\(begin|end)\s*\{(align\*?|displaymath|eqnarray)\}/g, (m, be, env)=> be==='end' ? `\\end{${ROOT_ENVS[env].split('}')[0]}}` : `\\begin{${ROOT_ENVS[env]}}`);
 /* sorgente → testo per MathLive */
 function slotsToMF(feed){
-  return feed.replace(new RegExp(String.raw`(?<=(?:&|\\\\|\\begin\s*\{[a-zA-Z]+\*?\}(?:\{[^{}]*\})?)\s*)\{\s*\}(?=\s*(?:&|\\\\|\\end\b))`, 'g'), '\\placeholder{}')
+  return nestEnvs(feed).replace(new RegExp(String.raw`(?<=(?:&|\\\\|\\begin\s*\{[a-zA-Z]+\*?\}(?:\{[^{}]*\})?)\s*)\{\s*\}(?=\s*(?:&|\\\\|\\end\b))`, 'g'), '\\placeholder{}')
              .replace(new RegExp(String.raw`(${OPT_CMD})\s*\[\s*\]`, 'g'), '$1[\\placeholder{}]')
              /* argomenti vuoti: dopo un comando, ^ o _, o dopo un altro argomento (\frac{a}{}, \sqrt[n]{}) */
              .replace(/(?<=(\\[a-zA-Z]+|[\^_\]}])\s*)\{\s*\}/g, (m, pre, at, s)=>{
